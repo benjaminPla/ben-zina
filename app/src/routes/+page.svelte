@@ -1,6 +1,7 @@
 <script lang="ts">
 	import 'leaflet/dist/leaflet.css';
 	import type { Map as LeafletMap, Marker } from 'leaflet';
+	import { onDestroy, untrack } from 'svelte';
 
 	interface LatLng {
 		lat: number;
@@ -37,7 +38,37 @@
 
 	const fuelOptions = ['Benzina', 'Gasolio', 'Metano', 'GPL'];
 
-	async function findNearMe() {
+	const ACCURACY_THRESHOLD_M = 25;
+	const MAX_WATCH_MS = 10000;
+
+	let activeWatchId: number | null = null;
+
+	onDestroy(() => {
+		if (activeWatchId !== null) navigator.geolocation.clearWatch(activeWatchId);
+	});
+
+	async function useLocation(loc: LatLng) {
+		errorMessage = '';
+		userLocation = loc;
+		status = 'loading';
+		try {
+			const res = await fetch('/api/search', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(loc)
+			});
+			if (!res.ok) throw new Error(`Ricerca fallita (${res.status})`);
+			const data = await res.json();
+			regionName = data.region;
+			stations = data.stations;
+			status = 'done';
+		} catch (e) {
+			status = 'error';
+			errorMessage = e instanceof Error ? e.message : 'Qualcosa è andato storto.';
+		}
+	}
+
+	function findNearMe() {
 		errorMessage = '';
 		userLocation = null;
 		status = 'locating';
@@ -48,43 +79,63 @@
 			return;
 		}
 
-		navigator.geolocation.getCurrentPosition(
-			async (position) => {
-				status = 'loading';
-				userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-				try {
-					const res = await fetch('/api/search', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							lat: position.coords.latitude,
-							lng: position.coords.longitude
-						})
-					});
-					if (!res.ok) throw new Error(`Ricerca fallita (${res.status})`);
-					const data = await res.json();
-					regionName = data.region;
-					stations = data.stations;
-					status = 'done';
-				} catch (e) {
-					status = 'error';
-					errorMessage = e instanceof Error ? e.message : 'Qualcosa è andato storto.';
-				}
+		if (activeWatchId !== null) {
+			navigator.geolocation.clearWatch(activeWatchId);
+			activeWatchId = null;
+		}
+
+		let best: GeolocationPosition | null = null;
+		let settled = false;
+
+		const stopWatch = () => {
+			if (activeWatchId !== null) {
+				navigator.geolocation.clearWatch(activeWatchId);
+				activeWatchId = null;
+			}
+			clearTimeout(budgetTimer);
+		};
+
+		const finish = (position: GeolocationPosition) => {
+			if (settled) return;
+			settled = true;
+			stopWatch();
+			void useLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+		};
+
+		const fail = (err: GeolocationPositionError) => {
+			if (settled) return;
+			settled = true;
+			stopWatch();
+			status = 'error';
+			errorMessage =
+				err.code === err.PERMISSION_DENIED
+					? "Permesso di posizione negato. Consenti l'accesso alla posizione per trovare i prezzi dei carburanti vicini."
+					: err.code === err.TIMEOUT
+						? 'Individuare una posizione precisa ha richiesto troppo tempo. Riprova.'
+						: `Impossibile ottenere la tua posizione: ${err.message}`;
+		};
+
+		const budgetTimer = setTimeout(() => {
+			if (best) {
+				finish(best);
+			} else if (!settled) {
+				settled = true;
+				stopWatch();
+				status = 'error';
+				errorMessage = 'Individuare una posizione precisa ha richiesto troppo tempo. Riprova.';
+			}
+		}, MAX_WATCH_MS);
+
+		activeWatchId = navigator.geolocation.watchPosition(
+			(position) => {
+				if (!best || position.coords.accuracy < best.coords.accuracy) best = position;
+				if (position.coords.accuracy <= ACCURACY_THRESHOLD_M) finish(position);
 			},
 			(err) => {
-				status = 'error';
-				errorMessage =
-					err.code === err.PERMISSION_DENIED
-						? "Permesso di posizione negato. Consenti l'accesso alla posizione per trovare i prezzi dei carburanti vicini."
-						: err.code === err.TIMEOUT
-							? 'Individuare una posizione precisa ha richiesto troppo tempo. Riprova.'
-							: `Impossibile ottenere la tua posizione: ${err.message}`;
+				if (err.code === err.PERMISSION_DENIED || !best) fail(err);
+				else finish(best);
 			},
-			{
-				enableHighAccuracy: true,
-				timeout: 10000,
-				maximumAge: 0
-			}
+			{ enableHighAccuracy: true, timeout: MAX_WATCH_MS, maximumAge: 0 }
 		);
 	}
 
@@ -118,11 +169,10 @@
 		(async () => {
 			const L = (await import('leaflet')).default;
 
-			// Leaflet's default marker icons reference relative image paths that 404 once
-			// bundled by Vite — repoint them at the actual bundled asset URLs.
 			const iconRetinaUrl = (await import('leaflet/dist/images/marker-icon-2x.png?url')).default;
 			const iconUrl = (await import('leaflet/dist/images/marker-icon.png?url')).default;
 			const shadowUrl = (await import('leaflet/dist/images/marker-shadow.png?url')).default;
+			delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 			L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
 			if (cancelled || !mapContainer) return;
@@ -135,10 +185,27 @@
 
 			const bounds: [number, number][] = [];
 
-			if (userLocation) {
-				const marker = L.marker([userLocation.lat, userLocation.lng]).addTo(map).bindPopup('Sei qui');
+			const startLocation = untrack(() => userLocation);
+
+			if (startLocation) {
+				const userIcon = L.divIcon({
+					className: '',
+					html: '<div style="width:18px;height:18px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 0 0 1px #dc2626;"></div>',
+					iconSize: [18, 18],
+					iconAnchor: [9, 9]
+				});
+				const marker = L.marker([startLocation.lat, startLocation.lng], { draggable: true, icon: userIcon })
+					.addTo(map)
+					.bindPopup('Sei qui (trascina il segnalino per correggere la posizione)');
+
+				marker.on('dragend', () => {
+					const { lat, lng } = marker.getLatLng();
+					userLocation = { lat, lng };
+					void useLocation({ lat, lng });
+				});
+
 				markers.push(marker);
-				bounds.push([userLocation.lat, userLocation.lng]);
+				bounds.push([startLocation.lat, startLocation.lng]);
 			}
 
 			for (const station of stations) {
@@ -182,6 +249,7 @@
 
     {#if stations.length > 0}
         <div class="map" bind:this={mapContainer}></div>
+        <p class="hint">Se il segnalino non è nella posizione giusta, trascinalo.</p>
     {/if}
 
 	{#if status === 'done'}
@@ -295,5 +363,11 @@
 		margin-top: 1.5rem;
 		border-radius: 4px;
 		overflow: hidden;
+	}
+
+	.hint {
+		color: #666;
+		font-size: 0.9rem;
+		margin-top: 0.5rem;
 	}
 </style>
