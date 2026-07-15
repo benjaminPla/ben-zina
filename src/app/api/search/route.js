@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { haversineKm, nearestRegion, searchArea } from '@/lib/server/mise';
+import { NextResponse } from 'next/server';
 
 const MAX_STATIONS = 50;
 

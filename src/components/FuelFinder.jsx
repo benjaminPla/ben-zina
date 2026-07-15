@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './FuelFinder.module.css';
+import { useNotify } from './Notifications';
 
 const fuelOptions = ['Benzina', 'Gasolio', 'Metano', 'GPL'];
 
@@ -14,12 +15,13 @@ const ITALY_BOUNDS = [
 ];
 
 export default function FuelFinder() {
-	const [status, setStatus] = useState('idle');
-	const [errorMessage, setErrorMessage] = useState('');
-	const [regionName, setRegionName] = useState('');
-	const [stations, setStations] = useState([]);
+	const notify = useNotify();
+
+	const [status, setStatus]             = useState('idle');
+	const [regionName, setRegionName]     = useState('');
+	const [stations, setStations]         = useState([]);
 	const [selectedFuel, setSelectedFuel] = useState('Benzina');
-	const [sortBy, setSortBy] = useState('distance');
+	const [sortBy, setSortBy]             = useState('distance');
 	const [userLocation, setUserLocation] = useState(null);
 
 	const activeWatchId = useRef(null);
@@ -30,7 +32,6 @@ export default function FuelFinder() {
 	const leaflet = useRef(null);
 
 	async function searchNearby(loc) {
-		setErrorMessage('');
 		setUserLocation(loc);
 		setStatus('loading');
 		try {
@@ -46,18 +47,17 @@ export default function FuelFinder() {
 			setStatus('done');
 		} catch (e) {
 			setStatus('error');
-			setErrorMessage(e instanceof Error ? e.message : 'Qualcosa è andato storto.');
+			notify(e instanceof Error ? e.message : 'Qualcosa è andato storto.');
 		}
 	}
 
 	function findNearMe() {
-		setErrorMessage('');
 		setUserLocation(null);
 		setStatus('locating');
 
 		if (!navigator.geolocation) {
 			setStatus('error');
-			setErrorMessage('La geolocalizzazione non è supportata da questo browser.');
+			notify('La geolocalizzazione non è supportata da questo browser.');
 			return;
 		}
 
@@ -89,7 +89,7 @@ export default function FuelFinder() {
 			settled = true;
 			stopWatch();
 			setStatus('error');
-			setErrorMessage(
+			notify(
 				err.code === err.PERMISSION_DENIED
 					? "Permesso di posizione negato. Consenti l'accesso alla posizione per trovare i prezzi dei carburanti vicini."
 					: err.code === err.TIMEOUT
@@ -105,7 +105,7 @@ export default function FuelFinder() {
 				settled = true;
 				stopWatch();
 				setStatus('error');
-				setErrorMessage('Individuare una posizione precisa ha richiesto troppo tempo. Riprova.');
+				notify('Individuare una posizione precisa ha richiesto troppo tempo. Riprova.');
 			}
 		}, MAX_WATCH_MS);
 
@@ -229,18 +229,17 @@ export default function FuelFinder() {
 	}, [mapReady, stations, userLocation, selectedFuel]);
 
 	return (
-		<main className={styles.main}>
-			<h1 className={styles.h1}>ben_zina più economica vicino a te</h1>
+		<main>
+			<h1>ben_zina</h1>
+            <p>Trova il carburante più economico vicino a te</p>
 
 			<button
-				className={styles.button}
+				className={styles.findBtn}
 				onClick={findNearMe}
 				disabled={status === 'locating' || status === 'loading'}
 			>
 				{status === 'locating' ? 'Individuazione della posizione…' : status === 'loading' ? 'Ricerca in corso…' : 'Trova'}
 			</button>
-
-			{status === 'error' && <p className={styles.error}>{errorMessage}</p>}
 
 			<div className={styles.map} ref={mapContainer}></div>
 			{userLocation && <p className={styles.hint}>Se il segnalino non è nella posizione giusta, trascinalo.</p>}

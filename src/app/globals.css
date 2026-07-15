@@ -1,8 +1,30 @@
+:root {
+    --BLACK: #000;
+    --GREY:  #666;
+
+    --FONT_SIZE_BIG:    2rem;
+    --FONT_SIZE_MEDIUM: 1rem;
+    --FONT_SIZE_NORMAL: 1rem;
+    --FONT_SIZE_SMALL:  0.9rem;
+
+    --SPACING_BIG:    2rem;
+    --SPACING_NORMAL: 1rem;
+    --SPACING_SMALL:  0.5rem;
+}
+
 * {
 	box-sizing: border-box;
+    margin:     0;
+    padding:    0;
 }
 
 body {
-	margin: 0;
-	font-family: system-ui, sans-serif;
+    color:           var(--BLACK);
+    display:         flex;
+    flex-direction:  column;
+	font-family:     monospace;
+    font-size:       clamp(var(--FONT_SIZE_NORMAL), 0.5vw + 1rem, var(--FONT_SIZE_BIG));
+    justify-content: center;
+	margin:          0 auto;
+	padding:         0 var(--SPACING_BIG);
 }

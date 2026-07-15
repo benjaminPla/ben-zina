@@ -1,21 +1,8 @@
-.main {
-	max-width: 720px;
-	margin: 0 auto;
-	padding: 2rem 1rem;
-}
-
-.h1 {
-	margin-bottom: 0.25rem;
-}
-
-.button {
-	font-size: 1rem;
-	padding: 0.6rem 1.2rem;
-	cursor: pointer;
-}
-
-.error {
-	color: #b00020;
+.findBtn {
+	cursor:    pointer;
+    font-size: clamp(var(--FONT_SIZE_MEDIUM), 0.5vw + 1rem, var(--FONT_SIZE_BIG));
+    padding:   var(--SPACING_SMALL);
+    width:     100%;
 }
 
 .controls {
@@ -49,14 +36,11 @@
 }
 
 .map {
-	height: 400px;
-	margin-top: 1.5rem;
-	border-radius: 4px;
-	overflow: hidden;
+	height:        40vh;
+	margin-top:    1.5rem;
 }
 
 .hint {
-	color: #666;
-	font-size: 0.9rem;
-	margin-top: 0.5rem;
+	color:      var(--GREY);
+	font-size:  var(--FONT_SIZE_SMALL);
 }

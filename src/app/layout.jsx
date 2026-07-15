@@ -1,9 +1,9 @@
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
+import { NotificationProvider } from '@/components/Notifications';
 
-const title = 'ben_zina — Trova il carburante più economico vicino a te';
-const description =
-	'Trova le stazioni di rifornimento self-service più economiche vicino a te, con prezzi in tempo reale';
+const title       = 'ben_zina';
+const description = 'Trova il carburante più economico vicino a te';
 
 export const metadata = {
 	title,
@@ -42,7 +42,9 @@ export const viewport = {
 export default function RootLayout({ children }) {
 	return (
 		<html lang="it">
-			<body>{children}</body>
+			<body>
+				<NotificationProvider>{children}</NotificationProvider>
+			</body>
 		</html>
 	);
 }
