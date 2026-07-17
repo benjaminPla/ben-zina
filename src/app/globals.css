@@ -1,11 +1,13 @@
 :root {
-    --BLACK: #000;
-    --GREY:  #666;
+    --BLACK:  #000;
+    --GREY:   #666;
+    --GREEN:  #1a7a3c;
+    --RED:    #b00020;
+    --YELLOW: #f5c518;
 
-    --FONT_SIZE_BIG:    2rem;
-    --FONT_SIZE_MEDIUM: 1rem;
-    --FONT_SIZE_NORMAL: 1rem;
-    --FONT_SIZE_SMALL:  0.9rem;
+    --FONT_SIZE_BIG:    clamp(1.5rem, 0.5vw  + 1rem,   2rem);
+    --FONT_SIZE_NORMAL: clamp(1rem,   0.5vw  + 1rem,   1.5rem);
+    --FONT_SIZE_SMALL:  clamp(0.9rem, 0.25vw + 0.5rem, 1.25rem);
 
     --SPACING_BIG:    2rem;
     --SPACING_NORMAL: 1rem;
@@ -14,17 +16,67 @@
 
 * {
 	box-sizing: border-box;
+    color:           var(--BLACK);
+    font-size:       var(--FONT_SIZE_NORMAL);
     margin:     0;
     padding:    0;
+	text-decoration: none;
 }
 
 body {
-    color:           var(--BLACK);
+    align-items:     center;
     display:         flex;
     flex-direction:  column;
 	font-family:     monospace;
-    font-size:       clamp(var(--FONT_SIZE_NORMAL), 0.5vw + 1rem, var(--FONT_SIZE_BIG));
-    justify-content: center;
-	margin:          0 auto;
+    min-height:      100dvh;
 	padding:         0 var(--SPACING_BIG);
+}
+
+main {
+    display:        flex;
+    flex:           1;
+    flex-direction: column;
+    width:          100%;
+}
+
+h1 {
+    font-size: var(--FONT_SIZE_BIG);
+}
+
+button {
+	cursor:    pointer;
+    padding:   var(--SPACING_SMALL);
+    width:     100%;
+}
+
+button:disabled {
+    background: var(--GREY);
+    cursor:     not-allowed;
+    opacity:    0.5;
+}
+
+.controls {
+	align-items: center;
+	display:     flex;
+	flex-wrap:   wrap;
+	gap:         var(--SPACING_SMALL);
+    margin:      var(--SPACING_SMALL) 0;
+}
+
+@media (max-width: 600px) {
+	.controls {
+		flex-direction: column;
+		align-items:    stretch;
+	}
+
+	.controls label {
+		align-items: center;
+		display:     flex;
+		gap:         var(--SPACING_SMALL);
+	}
+
+	.controls label span {
+		display: inline-block;
+		width:   11ch;
+	}
 }
