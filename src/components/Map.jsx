@@ -16,6 +16,11 @@ const USER_ICON_HTML = `<svg width="${ICON_SIZE[0]}" height="${ICON_SIZE[1]}" vi
 	<circle cx="12.5" cy="12.5" r="5.5" fill="#ffffff"/>
 </svg>`;
 
+const LOADING_MESSAGES = {
+	locating: 'Individuazione della posizione…',
+	loading:  'Ricerca stazioni…'
+};
+
 export default function Map({ stations = [], location, selectedFuel, status, onLocationChange }) {
 	const notify                  = useNotify();
 	const mapContainer            = useRef(null);
@@ -140,19 +145,25 @@ export default function Map({ stations = [], location, selectedFuel, status, onL
 		map.current.setView([location.lat, location.lng], Math.max(map.current.getZoom(), 14));
 	};
 
+	const loadingMessage = LOADING_MESSAGES[status];
+
 	return (
 		<>
 			<div className={styles.mapWrap}>
-				<div className={styles.map} ref={mapContainer}></div>
+				<div className={`${styles.map} ${loadingMessage ? styles.mapLoading : ''}`} ref={mapContainer}></div>
+				{loadingMessage && (
+					<div className={styles.loadingOverlay}>
+						<span className={styles.spinner} aria-hidden="true"></span>
+						<span className={styles.loadingText}>{loadingMessage}</span>
+					</div>
+				)}
 				{location && (
 					<button
 						type="button"
 						className={styles.centerButton}
 						onClick={centerOnLocation}
-						aria-label="Centra la mappa sulla mia posizione"
-						title="Centra sulla mia posizione"
 					>
-						◎
+						Centra
 					</button>
 				)}
 			</div>
