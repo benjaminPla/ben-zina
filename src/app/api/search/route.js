@@ -1,27 +1,38 @@
-import { haversineKm, nearestRegion, searchArea } from '@/lib/server/mise';
 import { NextResponse } from 'next/server';
 
-const MAX_STATIONS = 50;
+const BASE = 'https://carburanti.mise.gov.it/ospzApi'
 
-export async function POST(request) {
-	const body = await request.json().catch(() => null);
-	const lat = body?.lat;
-	const lng = body?.lng;
+export async function POST(req) {
+    try {
+        const body = await req.json();
 
-	if (typeof lat !== 'number' || typeof lng !== 'number' || Number.isNaN(lat) || Number.isNaN(lng)) {
-		return NextResponse.json({ message: 'Expected JSON body { lat: number, lng: number }' }, { status: 400 });
-	}
+        const reqBody = {
+            points:     [{ lat: body.lat, lng: body.lng }],
+            priceOrder: 'asc',
+            radius:     body.radius,
+        };
+        if (body.fuel) reqBody.fuelType = body.fuel;
 
-	const region = nearestRegion({ lat, lng });
-	const result = await searchArea({ region: region.id });
+        const res = await fetch(`${BASE}/search/zone`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body:    JSON.stringify(reqBody)
+        });
 
-	const stations = result.results
-		.map((station) => ({
-			...station,
-			distanceKm: haversineKm({ lat, lng }, station.location)
-		}))
-		.sort((a, b) => a.distanceKm - b.distanceKm)
-		.slice(0, MAX_STATIONS);
+        if (!res.ok) {
+            const text = await res.text();
+            console.error("mise_error", text);
+            throw new Error("MISE error");
+        }
 
-	return NextResponse.json({ region: region.name, stations });
+        const response = await res.json();
+
+        return NextResponse.json({ stations: response.results });
+    } catch(error) {
+        console.error("internal_server_error", error)
+        return NextResponse.json(
+            { error:  error?.message || "Something went wrong"        },
+            { status: error?.status  || error?.statusCode      || 500 }
+        )
+    }
 }

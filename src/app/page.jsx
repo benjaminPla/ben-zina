@@ -1,5 +1,108 @@
-import FuelFinder from '@/components/FuelFinder';
+'use client';
+
+import { FUELS } from '@lib/constants'
+import getGeolocation from '@lib/geolocation'
+import Map from '../components/Map';
+import { useNotify } from '../components/Notifications'
+import { useState } from 'react';
+
+const RADIUS_MIN = 1;
+const RADIUS_MAX = 20;
 
 export default function Page() {
-	return <FuelFinder />;
+	const notify = useNotify();
+
+	const [fuel, setFuel]         = useState('');
+	const [location, setLocation] = useState(null);
+	const [radius, setRadius]     = useState(2);
+	const [stations, setStations] = useState([]);
+	const [status, setStatus]     = useState('idle');
+
+    async function fetchStations(lat, lng) {
+		try {
+            setStatus('loading');
+
+            const res = await fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fuel, lat, lng, radius })
+            });
+
+            if (!res.ok) throw new Error('Ricerca fallita');
+
+            const data = await res.json();
+            setStations(data.stations);
+            setStatus('done');
+		} catch (error) {
+			setStatus('error');
+			notify(error?.message || 'Qualcosa è andato storto', 'error');
+		}
+    }
+
+    async function search() {
+		try {
+            setStatus('locating');
+
+            const { lat, lng } = await getGeolocation();
+
+            setLocation({ lat, lng });
+            await fetchStations(lat, lng);
+		} catch (error) {
+			setStatus('error');
+			notify(error?.message || 'Qualcosa è andato storto', 'error');
+		}
+    }
+
+    function handleLocationChange(loc) {
+        setLocation(loc);
+        fetchStations(loc.lat, loc.lng);
+    }
+
+    function handleRadiusChange(e) {
+        const value = Number(e.target.value) || RADIUS_MIN;
+        setRadius(Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, value)))
+    }
+
+    function handleFuelChange(e) {
+        setFuel(e.target.value)
+    }
+
+	return (
+		<main>
+			<h1>ben_zina</h1>
+            <p>Trova il carburante più economico vicino a te</p>
+
+			<div className="controls">
+				<label>
+					<span>Raggio:</span>
+                    <input type='number' value={radius} min={RADIUS_MIN} max={RADIUS_MAX} step="1" onChange={handleRadiusChange}/>
+                </label>
+
+				<label>
+					<span>Carburante:</span>
+					<select value={fuel} onChange={handleFuelChange}>
+						<option value="" disabled>Seleziona</option>
+						{FUELS.map((fuel) => (
+							<option key={fuel.id} value={fuel.id}>
+								{fuel.description}
+							</option>
+						))}
+					</select>
+				</label>
+			</div>
+
+			<button onClick={search} disabled={!fuel || !radius || status === 'locating' || status === 'loading'}>
+				{status === 'locating' ? 'Individuazione della posizione…' : status === 'loading' ? 'Ricerca in corso…' : 'Trova'}
+			</button>
+
+			<Map
+				stations={stations}
+				location={location}
+				selectedFuel={fuel}
+				status={status}
+				onLocationChange={handleLocationChange}
+			/>
+
+		</main>
+    )
 }
