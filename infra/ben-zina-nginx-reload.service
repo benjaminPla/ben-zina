@@ -1,0 +1,9 @@
+[Unit]
+Description=Reload ben-zina nginx to pick up renewed Let's Encrypt certs
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ben-zina/infra
+ExecStart=/usr/bin/docker compose -f docker-compose.prod.yml exec web nginx -s reload

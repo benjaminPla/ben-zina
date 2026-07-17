@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly nginx reload for Let's Encrypt cert renewal
+Requires=ben-zina-nginx-reload.service
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

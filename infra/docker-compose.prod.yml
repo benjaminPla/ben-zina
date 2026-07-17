@@ -1,0 +1,61 @@
+services:
+
+  app:
+    image: ${DOCKERHUB_USERNAME}/ben-zina_app:latest
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    image: ${DOCKERHUB_USERNAME}/ben-zina_web:latest
+    container_name: benzina-web
+    restart: unless-stopped
+    depends_on:
+      - app
+    volumes:
+      # Host-side path is intentionally separate from pichel's /etc/letsencrypt -
+      # zero shared filesystem state between the two projects' cert handling.
+      - /etc/letsencrypt-benzina:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+    networks:
+      - default
+      - edge_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - /etc/letsencrypt-benzina:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done'"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default:
+  edge_net:
+    external: true
+
+volumes:
+  certbot-www:

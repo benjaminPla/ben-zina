@@ -10,6 +10,7 @@ const title       = 'ben-zina';
 const description = 'Trova il carburante più economico vicino a te';
 
 export const metadata = {
+	metadataBase: new URL('https://ben-zina.com'),
 	title,
 	description,
 	icons: {
