@@ -11,6 +11,11 @@ const ICON_SIZE    = [20, 33];
 const POPUP_ANCHOR = [1, -28];
 const SHADOW_SIZE  = [33, 33];
 
+const HIGHLIGHT_ICON_ANCHOR  = [13, 43];
+const HIGHLIGHT_ICON_SIZE    = [26, 43];
+const HIGHLIGHT_POPUP_ANCHOR = [1, -36];
+const HIGHLIGHT_SHADOW_SIZE  = [43, 43];
+
 const USER_ICON_HTML = `<svg width="${ICON_SIZE[0]}" height="${ICON_SIZE[1]}" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
 	<path d="M12.5 0C5.6 0 0 5.6 0 12.5 0 19.4 12.5 41 12.5 41S25 19.4 25 12.5C25 5.6 19.4 0 12.5 0Z" fill="#dc2626" stroke="#7f1d1d" stroke-width="1"/>
 	<circle cx="12.5" cy="12.5" r="5.5" fill="#ffffff"/>
@@ -21,7 +26,7 @@ const LOADING_MESSAGES = {
 	loading:  'Ricerca stazioni…'
 };
 
-export default function Map({ stations = [], location, selectedFuel, status, onLocationChange }) {
+export default function Map({ stations = [], location, selectedFuel, status, onLocationChange, selectedIndex }) {
 	const hasResults                      = stations.length > 0;
 	const leaflet                         = useRef(null);
 	const [lockedHeight, setLockedHeight] = useState(null);
@@ -31,6 +36,8 @@ export default function Map({ stations = [], location, selectedFuel, status, onL
 	const mapWrap                         = useRef(null);
 	const naturalHeight                   = useRef(null);
 	const notify                          = useNotify();
+	const selectedMarker                  = useRef(null);
+	const stationMarkers                  = useRef({});
 
 	useLayoutEffect(() => {
 		if (hasResults) {
@@ -121,7 +128,9 @@ export default function Map({ stations = [], location, selectedFuel, status, onL
 			notify('Nessuna stazione trovata nelle vicinanze', 'warning');
 		}
 
-		for (const station of stations) {
+		const newStationMarkers = {};
+
+		stations.forEach((station, i) => {
 			try {
 				const fuelId    = parseInt(selectedFuel, 10);
 				const fuel      = station.fuels.find((f) => f.fuelId === fuelId && f.isSelf);
@@ -140,10 +149,13 @@ export default function Map({ stations = [], location, selectedFuel, status, onL
                         </div>`, { maxWidth: 220 });
 				runMarkers.push(marker);
 				bounds.push([station.location.lat, station.location.lng]);
+				newStationMarkers[i] = marker;
 			} catch (err) {
 				console.error('marker_error', err, station);
 			}
-		}
+		});
+
+		stationMarkers.current = newStationMarkers;
 
 		if (bounds.length > 0) {
 			currentMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 14 });
@@ -153,8 +165,38 @@ export default function Map({ stations = [], location, selectedFuel, status, onL
 
 		return () => {
 			for (const marker of runMarkers) marker.remove();
+			stationMarkers.current = {};
+			selectedMarker.current = null;
 		};
 	}, [mapReady, stations, location, selectedFuel, status, onLocationChange, notify]);
+
+	useEffect(() => {
+		const L          = leaflet.current;
+		const currentMap = map.current;
+		const marker     = selectedIndex !== null ? stationMarkers.current[selectedIndex] : null;
+		if (!mapReady || !L || !currentMap || !marker) return;
+
+		if (selectedMarker.current && selectedMarker.current !== marker) {
+			selectedMarker.current.setIcon(new L.Icon.Default());
+			selectedMarker.current.setZIndexOffset(0);
+		}
+
+		marker.setIcon(L.icon({
+			iconRetinaUrl: '/leaflet/marker-icon-2x.png',
+			iconUrl:       '/leaflet/marker-icon.png',
+			shadowUrl:     '/leaflet/marker-shadow.png',
+			iconSize:      HIGHLIGHT_ICON_SIZE,
+			iconAnchor:    HIGHLIGHT_ICON_ANCHOR,
+			popupAnchor:   HIGHLIGHT_POPUP_ANCHOR,
+			shadowSize:    HIGHLIGHT_SHADOW_SIZE
+		}));
+		marker.setZIndexOffset(1000);
+		marker.openPopup();
+		selectedMarker.current = marker;
+
+		currentMap.setView(marker.getLatLng(), Math.max(currentMap.getZoom(), 15));
+		mapWrap.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	}, [selectedIndex, mapReady]);
 
 	const centerOnLocation = () => {
 		if (!map.current || !location) return;

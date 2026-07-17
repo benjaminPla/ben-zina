@@ -6,4 +6,6 @@
 - [x] render stations table
 - [x] update loading ux
 - [x] fix marker close btn
-- [ ] update table css when mobile
+- [x] update table css when mobile
+- [x] click table row to highlight/pan to map marker
+- [x] table row cursor/hover feedback

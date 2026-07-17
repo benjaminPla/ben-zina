@@ -13,15 +13,17 @@ const RADIUS_MAX = 20;
 export default function Page() {
 	const notify = useNotify();
 
-	const [fuel, setFuel]         = useState('');
-	const [location, setLocation] = useState(null);
-	const [radius, setRadius]     = useState(2);
-	const [stations, setStations] = useState([]);
-	const [status, setStatus]     = useState('idle');
+	const [fuel, setFuel]                   = useState('');
+	const [location, setLocation]           = useState(null);
+	const [radius, setRadius]               = useState(2);
+	const [selectedIndex, setSelectedIndex] = useState(null);
+	const [stations, setStations]           = useState([]);
+	const [status, setStatus]               = useState('idle');
 
     async function fetchStations(lat, lng) {
 		try {
             setStatus('loading');
+            setSelectedIndex(null);
 
             const res = await fetch('/api/search', {
                 method: 'POST',
@@ -98,9 +100,15 @@ export default function Page() {
 				selectedFuel={fuel}
 				status={status}
 				onLocationChange={handleLocationChange}
+				selectedIndex={selectedIndex}
 			/>
 
-			<StationsTable stations={stations} selectedFuel={fuel} />
+			<StationsTable
+				stations={stations}
+				selectedFuel={fuel}
+				selectedIndex={selectedIndex}
+				onSelect={setSelectedIndex}
+			/>
 
 		</main>
     )

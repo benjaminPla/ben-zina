@@ -7,7 +7,7 @@ function isToday(date) {
 		&& date.getDate() === now.getDate();
 }
 
-export default function StationsTable({ stations = [], selectedFuel }) {
+export default function StationsTable({ stations = [], selectedFuel, selectedIndex, onSelect }) {
 	if (stations.length === 0) return null;
 
 	const fuelId = parseInt(selectedFuel, 10);
@@ -32,7 +32,18 @@ export default function StationsTable({ stations = [], selectedFuel }) {
 						const stale       = validDate && !isToday(updatedDate);
 
 						return (
-							<tr key={station.id ?? i}>
+							<tr
+								key={station.id ?? i}
+								className={selectedIndex === i ? styles.selectedRow : undefined}
+								tabIndex={0}
+								onClick={() => onSelect(i)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										onSelect(i);
+									}
+								}}
+							>
 								<td data-label="Marca">{station.brand}</td>
 								<td data-label="Distributore">{station.name}</td>
 								<td data-label="Aggiornato" className={stale ? styles.stale : undefined}>

@@ -25,6 +25,25 @@
 	border-bottom: none;
 }
 
+.table tbody tr {
+	cursor:     pointer;
+	transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+	background: var(--border);
+}
+
+.table tbody tr:focus-visible {
+	outline:        2px solid var(--primary);
+	outline-offset: -2px;
+}
+
+.selectedRow,
+.selectedRow:hover {
+	background: var(--primary-light);
+}
+
 .price {
 	color:       var(--accent);
 	font-size:   var(--FONT_SIZE_BIG);
