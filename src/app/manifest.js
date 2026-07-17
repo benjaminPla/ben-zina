@@ -1,7 +1,7 @@
 export default function manifest() {
 	return {
-		name:             'ben_zina',
-		short_name:       'ben_zina',
+		name:             'ben-zina',
+		short_name:       'ben-zina',
 		description:      'Trova il carburante più economico vicino a te',
 		icons: [
 			{ src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },

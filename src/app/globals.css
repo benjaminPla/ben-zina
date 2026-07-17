@@ -97,6 +97,12 @@ h1 {
     font-size: var(--FONT_SIZE_SMALL);
 }
 
+.titleRow {
+    align-items: center;
+    display:     flex;
+    gap:         var(--SPACING_SMALL);
+}
+
 .controls {
 	align-items:            center;
 	background:             var(--surface);

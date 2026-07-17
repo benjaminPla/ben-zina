@@ -6,7 +6,7 @@ import { Roboto } from 'next/font/google';
 
 const roboto = Roboto({ subsets: ['latin'], weight: ['400', '500', '700'] });
 
-const title       = 'ben_zina';
+const title       = 'ben-zina';
 const description = 'Trova il carburante più economico vicino a te';
 
 export const metadata = {

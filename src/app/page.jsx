@@ -2,6 +2,7 @@
 
 import { FUELS } from '@lib/constants'
 import getGeolocation from '@lib/geolocation'
+import Logo from '../components/Logo';
 import Map from '../components/Map';
 import StationsTable from '../components/StationsTable';
 import { useNotify } from '../components/Notifications'
@@ -72,7 +73,10 @@ export default function Page() {
 
 	return (
 		<main>
-            <h1>ben_zina</h1>
+            <div className="titleRow">
+                <Logo size={32} />
+                <h1>ben-zina</h1>
+            </div>
             <p className="subtitle">Trova il carburante più economico vicino a te</p>
 
 			<div className="controls">
