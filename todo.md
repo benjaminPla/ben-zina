@@ -9,3 +9,4 @@
 - [x] update table css when mobile
 - [x] click table row to highlight/pan to map marker
 - [x] table row cursor/hover feedback
+- [ ] check vm `docker ps` benzina container names -> "infra-*"
