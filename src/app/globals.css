@@ -16,7 +16,7 @@
 
     --accent:        #84CC16;
 
-    --FONT_SIZE_BIG:    clamp(1.5rem, 0.5vw  + 1rem,   1.2rem);
+    --FONT_SIZE_BIG:    clamp(1.2rem, 0.5vw  + 1rem,   1.5rem);
     --FONT_SIZE_NORMAL: clamp(1rem,   0.5vw  + 1rem,   1.1rem);
     --FONT_SIZE_SMALL:  clamp(0.9rem, 0.25vw + 0.5rem, 1rem);
 
